@@ -20,6 +20,18 @@
             margin: 0;
             text-transform: uppercase;
         }
+        
+        #visualizer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1; 
+            opacity: 0.15;
+            pointer-events: none; 
+        }
+
         h1 {
             font-family: 'Pirata One', system-ui;
             font-size: 5rem;
@@ -32,7 +44,7 @@
             25%  { color: #9933ff; }
             50%  { color: #3366ff; }
             75%  { color: #ffff33; }
-	    100% { color: #ff3333; }
+            100% { color: #ff3333; }
         }
         p {
             font-size: 0.9rem;
@@ -91,17 +103,17 @@
             color: #888;
         }
         input[type=range] {
-            -webkit-appearance: none;
+            appearance: none;
             width: 100px;
             background: transparent;
         }
         input[type=range]::-webkit-slider-runnable-track {
             width: 100%;
             height: 4px;
-            background: #555;
+            background: #999999;
         }
         input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
+            appearance: none;
             height: 14px;
             width: 8px;
             background: #ffffff;
@@ -111,15 +123,19 @@
     </style>
 </head>
 <body>
+    <canvas id="visualizer"></canvas>
+
     <h1>STAMINA RADIO</h1>
     <p>(v2)</p>
     <p>Non-stop 24/7 music featured in the<br>East Coast Stamina / StaminaRPG series.</p>
     <div class="player-container">
         <span class="now-playing-label">Now Playing</span>
         <div class="track-title" id="track-title">Loading current track...</div>
-        <audio id="radio-player" preload="none">
+        
+        <audio id="radio-player" preload="none" crossorigin="anonymous">
             <source src="https://radiostream.marudehabanero.me/stream" type="audio/mpeg">
         </audio>
+        
         <div class="controls-wrapper">
             <button id="play-pause-btn">PLAY</button>
             <div class="volume-wrapper">
@@ -128,6 +144,7 @@
             </div>
         </div>
     </div>
+
     <script>
         async function fetchMetadata() {
             try {
@@ -149,7 +166,61 @@
         const playPauseBtn = document.getElementById('play-pause-btn');
         const volumeSlider = document.getElementById('volume-slider');
 
+        let audioContext, analyser, sourceNode;
+
+        function setupVisualizer() {
+            if (audioContext) return; 
+
+            const canvas = document.getElementById('visualizer');
+            const ctx = canvas.getContext('2d');
+
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 128; 
+
+            sourceNode = audioContext.createMediaElementSource(audio);
+            sourceNode.connect(analyser);
+            analyser.connect(audioContext.destination);
+
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            const h1Element = document.querySelector('h1');
+
+            function draw() {
+                requestAnimationFrame(draw);
+                
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                
+                analyser.getByteFrequencyData(dataArray);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                const currentColor = window.getComputedStyle(h1Element).color;
+                const rgb = currentColor.match(/\d+/g);
+
+                const barWidth = canvas.width / bufferLength;
+                let x = 0;
+
+                for (let i = 0; i < bufferLength; i++) {
+                    const barHeight = (dataArray[i] / 255) * canvas.height; 
+                    
+                    ctx.fillStyle = `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${dataArray[i] / 255})`;
+                    ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+                    
+                    x += barWidth;
+                }
+            }
+            draw();
+        }
+
         playPauseBtn.addEventListener('click', () => {
+            setupVisualizer();
+
+            if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+
             if (audio.paused) {
                 audio.load();
                 audio.play();
