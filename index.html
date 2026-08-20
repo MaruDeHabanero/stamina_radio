@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
@@ -31,7 +31,7 @@
             opacity: 0.15;
             pointer-events: none; 
         }
-
+ 
         h1 {
             font-family: 'Pirata One', system-ui;
             font-size: 5rem;
@@ -103,8 +103,10 @@
             color: #888;
         }
         input[type=range] {
+            -webkit-appearance: none;
             appearance: none;
             width: 100px;
+            height: 14px;
             background: transparent;
         }
         input[type=range]::-webkit-slider-runnable-track {
@@ -112,19 +114,35 @@
             height: 4px;
             background: #999999;
         }
+        input[type=range]::-moz-range-track {
+            width: 100%;
+            height: 4px;
+            background: #999999;
+            border: none;
+        }
         input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
             appearance: none;
             height: 14px;
             width: 8px;
             background: #ffffff;
             margin-top: -5px;
             cursor: pointer;
+            border: none;
+        }
+        input[type=range]::-moz-range-thumb {
+            height: 14px;
+            width: 8px;
+            background: #ffffff;
+            cursor: pointer;
+            border: none;
+            border-radius: 0;
         }
     </style>
 </head>
 <body>
     <canvas id="visualizer"></canvas>
-
+ 
     <h1>STAMINA RADIO</h1>
     <p>(v2)</p>
     <p>Non-stop 24/7 music featured in the<br>East Coast Stamina / StaminaRPG series.</p>
@@ -144,7 +162,7 @@
             </div>
         </div>
     </div>
-
+ 
     <script>
         async function fetchMetadata() {
             try {
@@ -158,69 +176,86 @@
                 }
             } catch (error) {}
         }
-
+ 
         setInterval(fetchMetadata, 30000);
         fetchMetadata();
-
+ 
         const audio = document.getElementById('radio-player');
         const playPauseBtn = document.getElementById('play-pause-btn');
         const volumeSlider = document.getElementById('volume-slider');
-
+ 
         let audioContext, analyser, sourceNode;
-
+ 
         function setupVisualizer() {
             if (audioContext) return; 
-
+ 
             const canvas = document.getElementById('visualizer');
             const ctx = canvas.getContext('2d');
-
+ 
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             analyser = audioContext.createAnalyser();
             analyser.fftSize = 128; 
-
+ 
             sourceNode = audioContext.createMediaElementSource(audio);
             sourceNode.connect(analyser);
             analyser.connect(audioContext.destination);
-
+ 
             const bufferLength = analyser.frequencyBinCount;
             const dataArray = new Uint8Array(bufferLength);
-
+ 
             const h1Element = document.querySelector('h1');
-
-            function draw() {
-                requestAnimationFrame(draw);
-                
+ 
+            function resizeCanvas() {
                 canvas.width = window.innerWidth;
                 canvas.height = window.innerHeight;
-                
+            }
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+ 
+            let lastColorUpdate = 0;
+            let cachedRgb = [255, 255, 255];
+            let lastFrameTime = 0;
+            const frameInterval = 1000 / 30;
+ 
+            function draw(timestamp) {
+                requestAnimationFrame(draw);
+ 
+                if (timestamp - lastFrameTime < frameInterval) return;
+                lastFrameTime = timestamp;
+ 
+                if (timestamp - lastColorUpdate > 200) {
+                    const currentColor = window.getComputedStyle(h1Element).color;
+                    cachedRgb = currentColor.match(/\d+/g);
+                    lastColorUpdate = timestamp;
+                }
+ 
                 analyser.getByteFrequencyData(dataArray);
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                const currentColor = window.getComputedStyle(h1Element).color;
-                const rgb = currentColor.match(/\d+/g);
-
+ 
                 const barWidth = canvas.width / bufferLength;
                 let x = 0;
-
+ 
                 for (let i = 0; i < bufferLength; i++) {
-                    const barHeight = (dataArray[i] / 255) * canvas.height; 
-                    
-                    ctx.fillStyle = `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${dataArray[i] / 255})`;
+                    const value = dataArray[i] / 255;
+                    const barHeight = Math.max(value, 0.04) * canvas.height;
+                    const alpha = Math.max(value, 0.15);
+ 
+                    ctx.fillStyle = `rgba(${cachedRgb[0]}, ${cachedRgb[1]}, ${cachedRgb[2]}, ${alpha})`;
                     ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
-                    
+ 
                     x += barWidth;
                 }
             }
-            draw();
+            draw(0);
         }
-
+ 
         playPauseBtn.addEventListener('click', () => {
             setupVisualizer();
-
+ 
             if (audioContext && audioContext.state === 'suspended') {
                 audioContext.resume();
             }
-
+ 
             if (audio.paused) {
                 audio.load();
                 audio.play();
@@ -234,7 +269,7 @@
                 playPauseBtn.style.color = '#000000';
             }
         });
-
+ 
         volumeSlider.addEventListener('input', (e) => {
             audio.volume = e.target.value;
         });
