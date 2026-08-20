@@ -1,0 +1,20 @@
+ services:
+  icecast:
+    image: pltnk/icecast2
+    container_name: radio_icecast
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    volumes:
+      - ./icecast.xml:/etc/icecast2/icecast.xml:ro,z
+
+  autodj:
+    image: savonet/liquidsoap:v2.2.5
+    container_name: radio_autodj
+    volumes:
+      - ./music:/music:ro,z
+      - ./radio.liq:/etc/liquidsoap/radio.liq:ro,z
+    command: ["/etc/liquidsoap/radio.liq"]
+    depends_on:
+      - icecast
+    restart: unless-stopped

@@ -1,0 +1,23 @@
+# "randomize" will guarantee non-repeated shuffle until it ends.
+# "watch" just listens to new music if added.
+music = playlist(mode="randomize", reload_mode="watch", "/music")
+
+# Force Metadata with title of file, in case that Metadata is empty.
+music = map_metadata(fun(m) -> 
+  if m["title"] == "" then [("title", m["filename"])] else m end, 
+music)
+
+radio = fallback(track_sensitive=false, [music, blank()])
+radio = mksafe(radio)
+
+# Transcode into MP3 for better compatibility.
+# You might probably want to change this if you want higher quality.
+output.icecast(%mp3(bitrate=128),
+  host="icecast",
+  port=8000,
+  password="password_that_icecast_and_autodj_will_share",
+  mount="/stream",
+  name="Stamina Radio",
+  description="bangerz",
+  fallible=true,  
+  radio)
