@@ -1,0 +1,10 @@
+icecast.xml
+radio.liq
+
+music/
+*.mp3
+*.ogg
+*.flac
+
+.env
+*.log
