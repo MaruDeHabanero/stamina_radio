@@ -13,6 +13,7 @@
     container_name: radio_autodj
     volumes:
       - ./music:/music:ro,z
+      - ./queue:/queue:rw,z
       - ./radio.liq:/etc/liquidsoap/radio.liq:ro,z
     command: ["/etc/liquidsoap/radio.liq"]
     depends_on:
