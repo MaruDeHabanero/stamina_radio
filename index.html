@@ -210,7 +210,9 @@
                 const data = await response.json();
                 const source = Array.isArray(data.icestats.source) ? data.icestats.source[0] : data.icestats.source;
                 if (source && source.title) {
-                    document.getElementById('track-title').innerText = source.title;
+                    const title = String(source.title).replace(/^\/(music|queue)(?=\/|$)/, '');
+
+                    document.getElementById('track-title').innerText = title;
                 } else {
                     document.getElementById('track-title').innerText = "Oops, something went wrong with el titulo :p";
                 }
