@@ -18,18 +18,16 @@
             justify-content: center;
             min-height: 100vh;
             margin: 0;
-            text-transform: uppercase;
         }
         
         #visualizer {
-            position: fixed;
-            top: 0;
-            left: 0;
+            position: absolute;
+            inset: 0;
             width: 100%;
             height: 100%;
-            z-index: -1; 
+            z-index: 0;
             opacity: 0.15;
-            pointer-events: none; 
+            pointer-events: none;
         }
  
         h1 {
@@ -39,6 +37,7 @@
             letter-spacing: 3px;
             animation: colorCycle 8s infinite;
         }
+
         @keyframes colorCycle {
             0%   { color: #ff3333; }
             25%  { color: #9933ff; }
@@ -46,19 +45,29 @@
             75%  { color: #ffff33; }
             100% { color: #ff3333; }
         }
+
         p {
             font-size: 0.9rem;
             color: #888888;
             margin-bottom: 40px;
             text-align: center;
         }
+
         .player-container {
+            position: relative;
+            overflow: hidden;
             background-color: #1a1a1a;
             padding: 30px 40px;
             width: 320px;
             text-align: center;
             border: 2px solid #333;
         }
+
+        .player-container > *:not(#visualizer) {
+            position: relative;
+            z-index: 1;
+        }
+
         .now-playing-label {
             font-size: 0.75rem;
             color: #555555;
@@ -66,6 +75,7 @@
             margin-bottom: 15px;
             letter-spacing: 1px;
         }
+
         .track-title {
             font-size: 1.1rem;
             font-weight: 700;
@@ -73,12 +83,14 @@
             margin-bottom: 25px;
             word-wrap: break-word;
         }
+
         .controls-wrapper {
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 15px;
         }
+
         button {
             background-color: #ffffff;
             color: #000000;
@@ -91,10 +103,12 @@
             text-transform: uppercase;
             transition: background-color 0.2s;
         }
+
         button:hover {
             background-color: #ff3333;
             color: #ffffff;
         }
+
         .volume-wrapper {
             display: flex;
             align-items: center;
@@ -102,6 +116,7 @@
             font-size: 0.8rem;
             color: #888;
         }
+
         input[type=range] {
             -webkit-appearance: none;
             appearance: none;
@@ -109,17 +124,20 @@
             height: 14px;
             background: transparent;
         }
+
         input[type=range]::-webkit-slider-runnable-track {
             width: 100%;
             height: 4px;
             background: #999999;
         }
+
         input[type=range]::-moz-range-track {
             width: 100%;
             height: 4px;
             background: #999999;
             border: none;
         }
+
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
@@ -130,6 +148,7 @@
             cursor: pointer;
             border: none;
         }
+
         input[type=range]::-moz-range-thumb {
             height: 14px;
             width: 8px;
@@ -181,13 +200,14 @@
 
         */
     </script>
-    <canvas id="visualizer"></canvas>
  
     <h1>STAMINA RADIO</h1>
     <p>(v2)</p>
     <p>Non-stop 24/7 music featured in the<br>East Coast Stamina / StaminaRPG series.</p>
     <div class="player-container">
-        <span class="now-playing-label">Now Playing</span>
+        <canvas id="visualizer"></canvas>
+
+        <span class="now-playing-label">NOW PLAYING</span>
         <div class="track-title" id="track-title">Loading current track...</div>
         
         <audio id="radio-player" preload="none" crossorigin="anonymous">
@@ -248,11 +268,13 @@
             const h1Element = document.querySelector('h1');
  
             function resizeCanvas() {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
+                const container = canvas.parentElement;
+                canvas.width = container.clientWidth;
+                canvas.height = container.clientHeight;
             }
             resizeCanvas();
-            window.addEventListener('resize', resizeCanvas);
+            const resizeObserver = new ResizeObserver(resizeCanvas);
+            resizeObserver.observe(canvas.parentElement);
  
             let lastColorUpdate = 0;
             let cachedRgb = [255, 255, 255];
